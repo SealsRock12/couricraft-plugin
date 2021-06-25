@@ -11,18 +11,9 @@ import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
-import net.kyori.adventure.audience.MessageType;
-import net.kyori.adventure.identity.Identified;
-import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import okhttp3.OkHttpClient;
-import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -32,13 +23,12 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
@@ -48,14 +38,12 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
     public FileConfiguration config;
     public ProtocolManager protocolManager;
     public JDA jda;
-    public OkHttpClient httpClient;
 
     @Override
     public void onEnable() {
         instance = this;
         config = getConfig();
         protocolManager = ProtocolLibrary.getProtocolManager();
-        httpClient = new OkHttpClient();
 
         getServer().getPluginManager().registerEvents(this, this);
 
@@ -84,73 +72,44 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void incomingChatMessage(AsyncChatEvent event) {
+        event.getPlayer().sendMessage(Component.text("In game chat is disabled. You can /msg a player or talk to them via Discord.", NamedTextColor.RED));
         event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void playerJoin(PlayerJoinEvent event) {
-        event.joinMessage(Component.empty());
+        event.joinMessage(null);
         event.getPlayer().sendPlayerListHeaderAndFooter(Component.text("Couriway Minecraft"), Component.empty());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void playerLeave(PlayerQuitEvent event) {
-        event.quitMessage(Component.empty());
+        event.quitMessage(null);
     }
 
     @EventHandler
     public void msgCommand(MsgCommandEvent event) {
-        event.
-    }
+        UUID uuid = new UUID(0L, 0L);
+        if (event.getSender() instanceof Player p) uuid = p.getUniqueId();
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("Pee Pee Pants");
-            return true;
-        }
-
-        if (command.getName().equalsIgnoreCase("msg")) {
-            Player target = Bukkit.getPlayer(args[0]);
-            Player source = (Player) sender;
-            args[0] = ""; // drop first element hack
-            if (target == null) {
-                source.sendMessage(Component.text("That player doesn't exist or is offline.").color(NamedTextColor.RED));
-                return true;
-            }
-
-            target.sendMessage(source,
-                LegacyComponentSerializer.legacyAmpersand().deserialize("&d[&aFrom &6" + source.getName() + "&d]&f" + String.join(" ", args))
-                    .clickEvent(ClickEvent.suggestCommand("/msg " + source.getName() + " ")),
-            MessageType.CHAT);
-
-
-            sender.sendMessage(
-                LegacyComponentSerializer.legacyAmpersand().deserialize("&d[&aTo &6" + target.getName() + "&d]&f" + String.join(" ", args))
-                    .clickEvent(ClickEvent.suggestCommand("/msg " + target.getName() + " "))
-            );
-
-            jda.getTextChannelById(getConfig().getString("channels.messages")).sendMessageEmbeds(new EmbedBuilder()
-                .setTitle("Message Sent")
-                .setColor(Color.CYAN)
-                .setAuthor(sender.getName())
-                .setFooter(target.getName())
-                .setDescription(String.join(" ", args))
-                .setTimestamp(Instant.now())
-                .addField("Author", formatPlayer(source), false)
-                .addField("Recipient", formatPlayer(target), false)
-                .build()
-            ).complete();
-            return true;
-        }
-        return false;
+        jda.getTextChannelById(getConfig().getString("channels.messages")).sendMessageEmbeds(new EmbedBuilder()
+            .setTitle("Message Sent")
+            .setColor(Color.CYAN)
+            .setAuthor(event.getSender().getName())
+            .setFooter(event.getTarget().getName())
+            .setDescription(event.getMessage().toString())
+            .setTimestamp(Instant.now())
+            .addField("Author", "`%s`\n`%s`".formatted(event.getSender().getName(), uuid), false)
+            .addField("Recipient", "`%s`\n`%s`".formatted(event.getTarget().getName(), event.getTarget().getUniqueId()), false)
+            .build()
+        ).complete();
     }
 
     @Override
     public void onEvent(GenericEvent event) {
         try {
             this.getClass().getMethod("handleEvent", event.getClass()).invoke(this, event);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {}
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {}
     }
 
     public void handleeEvent(GuildMessageReceivedEvent event) {
@@ -193,9 +152,5 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
                     .build()
             ).complete();
         }
-    }
-
-    private static String formatPlayer(Player p) {
-        return "`" + p.getName() + "`\n`" + p.getUniqueId() + "`";
     }
 }
