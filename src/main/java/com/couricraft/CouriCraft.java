@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -97,7 +98,7 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
             .setColor(Color.CYAN)
             .setAuthor(event.getSender().getName())
             .setFooter(event.getTarget().getName())
-            .setDescription(event.getMessage().toString())
+            .setDescription(((TextComponent) event.getMessage()).content())
             .setTimestamp(Instant.now())
             .addField("Author", "`%s`\n`%s`".formatted(event.getSender().getName(), uuid), false)
             .addField("Recipient", "`%s`\n`%s`".formatted(event.getTarget().getName(), event.getTarget().getUniqueId()), false)
