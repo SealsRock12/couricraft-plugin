@@ -113,7 +113,7 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {}
     }
 
-    public void handleeEvent(GuildMessageReceivedEvent event) {
+    public void handleEvent(GuildMessageReceivedEvent event) {
         if (event.isWebhookMessage() || event.getAuthor().isSystem() || event.getAuthor().isBot()) return;
         if (event.getChannel().getId().contentEquals(config.getString("channels.whitelist"))) {
             Player player = getServer().getPlayerExact(event.getMessage().getContentRaw());
