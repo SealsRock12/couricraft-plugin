@@ -4,6 +4,7 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import dev.thejakwe.tuinity.event.AnvilRenameEvent;
 import dev.thejakwe.tuinity.event.MsgCommandEvent;
+import dev.thejakwe.tuinity.event.SignTextEvent;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -16,7 +17,9 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -28,17 +31,21 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public final class CouriCraft extends JavaPlugin implements Listener, EventListener {
 
@@ -47,6 +54,15 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
     public YamlConfiguration whitelist;
     public ProtocolManager protocolManager;
     public JDA jda;
+    public Map<UUID, BukkitTask> tasks = new HashMap<>();
+
+    public final Function<String, String> automod = s -> {
+        s = s.replaceAll("[^ -~]", ""); // all non ascii chars
+        for (String regex : config.getStringList("automod")) {
+            s = s.replaceAll(regex, "#"); // go thru each regex and replace with # to censor | regex not public dont bypass it Okayge
+        }
+        return s;
+    };
 
     @Override
     public void onEnable() {
@@ -88,12 +104,18 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
     @EventHandler(priority = EventPriority.HIGHEST)
     public void playerJoin(PlayerJoinEvent event) {
         event.joinMessage(null);
-        event.getPlayer().sendPlayerListHeaderAndFooter(Component.text("Couriway Minecraft"), Component.empty());
+        tasks.put(event.getPlayer().getUniqueId(), Bukkit.getScheduler().runTaskTimer(this, () -> {
+            event.getPlayer().sendPlayerListHeaderAndFooter(
+                Component.text("Couri", NamedTextColor.GOLD, TextDecoration.BOLD).append(Component.text("Craft", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD)),
+                LegacyComponentSerializer.legacyAmpersand().deserialize("&6TPS: %s".formatted(Bukkit.getTPS()[0]))
+            );
+        }, 20, 20));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void playerLeave(PlayerQuitEvent event) {
         event.quitMessage(null);
+        tasks.get(event.getPlayer().getUniqueId()).cancel();
     }
 
     @EventHandler
@@ -116,10 +138,12 @@ public final class CouriCraft extends JavaPlugin implements Listener, EventListe
 
     @EventHandler
     public void itemRename(AnvilRenameEvent event) {
-        event.name(event.name()
-            .replaceAll("[^ -~]", "") // all non ascii chars
-            .replaceAll(config.getString("automod"), "#") // no poopy words madge | regex not public dont bypass it FUNgineer
-        ); //
+        event.name(automod.apply(event.name()));
+    }
+
+    @EventHandler
+    public void signCreate(SignTextEvent event) {
+        event.lines(Arrays.stream(event.lines()).map(automod).toArray(String[]::new));
     }
 
     @Override
