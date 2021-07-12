@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.bukkit.OfflinePlayer;
+import org.slf4j.Logger;
 
 import java.awt.*;
 import java.time.Instant;
@@ -16,10 +17,12 @@ public final class JDAEvents extends ListenerAdapter {
 
     final CouriCraft plugin;
     private final JDACommands commands;
+    private final Logger logger;
 
     public JDAEvents(CouriCraft plugin) {
         this.plugin = plugin;
         this.commands = new JDACommands(this);
+        this.logger = plugin.getSLF4JLogger();
     }
 
     @Override
@@ -32,17 +35,15 @@ public final class JDAEvents extends ListenerAdapter {
                 throw new RuntimeException(ex); // shouldnt happen, if it does jda can handle + log
             }
         } else if (event.getChannel().getId().contentEquals(plugin.config.getString("channels.commands"))) {
-            if (event.getMessage().getContentRaw().contentEquals("-refresh")) {
+            if (event.getMessage().getContentRaw().trim().equalsIgnoreCase("-refresh")) {
                 commands.refreshCommand(event);
             }
         }
     }
 
-
-
     @Override
     public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
-        UUID uuid = Optional.ofNullable(plugin.whitelist.getString(event.getUser().getId())).map(UUID::fromString).orElse(null);
+        UUID uuid = Optional.ofNullable(plugin.whitelist.getString(event.getUser().getId())).map(UUID::fromString).orElse(null); // uuid or null
         if (uuid == null) return;
         plugin.whitelist.set(event.getUser().getId(), null);
         OfflinePlayer player = CouriCraft.instance.getServer().getOfflinePlayer(uuid);

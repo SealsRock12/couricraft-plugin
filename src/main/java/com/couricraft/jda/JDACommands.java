@@ -53,17 +53,10 @@ public final class JDACommands {
             return;
         }
 
-        UUID old = Optional.ofNullable(whitelist.getString(event.getAuthor().getId())).map(UUID::fromString).orElse(null);
         whitelist.set(event.getAuthor().getId(), uuid.toString());
         whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
         OfflinePlayer player = server.getOfflinePlayer(uuid);
-        if (!whitelist.getValues(false).containsValue(old)) {
-            OfflinePlayer p = server.getOfflinePlayer(old);
-            logger.info("Unwhitelisted acc %s (%s) | user %s switched to %s (%s)".formatted(p.getName(), old, event.getAuthor().getId(), player.getName(), uuid));
-            p.setWhitelisted(false);
-        } else {
-            logger.info("Whitelisted acc %s (%s) via user %s".formatted(player.getName(), uuid, event.getAuthor().getId()));
-        }
+        logger.info("Whitelisted acc %s (%s) via user %s".formatted(player.getName(), uuid, event.getAuthor().getId()));
         player.setWhitelisted(true);
         event.getChannel().sendMessageEmbeds(
             new EmbedBuilder()
@@ -82,27 +75,20 @@ public final class JDACommands {
         logger.info("Refresh Started by %s".formatted(event.getAuthor().getId()));
         TextChannel channel = event.getJDA().getTextChannelById(config.getString("channels.whitelist"));
         whitelist.getValues(false).forEach((u, p) -> {
-            logger.trace("[REFRESH] Found User %s UUID %s".formatted(u, p));
+            logger.debug("[REFRESH] Found User %s UUID %s".formatted(u, p));
             event.getGuild().retrieveMemberById(u).queue(mem -> {
                 if (!channel.canTalk(mem)) {
                     OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
-                    if (!whitelist.getValues(false).containsValue(p)) {
-                        player.setWhitelisted(false);
-                        logger.info("[REFRESH] User %s no longer has access | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
-                    } else {
-                        logger.info("[REFRESH] User %s no longer has access | didnt unwhitelist acc %s (%s)".formatted(u, player.getName(), p));
-                    }
+                    player.setWhitelisted(false);
+                    logger.info("[REFRESH] User %s no longer has access | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
                 }
             }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MEMBER, e -> {
                 OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
-                if (!whitelist.getValues(false).containsValue(p)) {
-                    player.setWhitelisted(false);
-                    logger.info("[REFRESH] User %s left | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
-                } else {
-                    logger.info("[REFRESH] User %s left | didnt unwhitelist acc %s (%s)".formatted(u, player.getName(), p));
-                }
+                player.setWhitelisted(false);
+                logger.info("[REFRESH] User %s left | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
             }));
         });
-        logger.info("");
+        logger.info("Refresh complete");
+        event.getChannel().sendMessage("Refresh complete.").reference(event.getMessage()).queue();
     }
 }

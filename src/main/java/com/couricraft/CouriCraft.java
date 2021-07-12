@@ -1,7 +1,5 @@
 package com.couricraft;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import com.couricraft.jda.JDAEvents;
 import dev.thejakwe.tuinity.event.AnvilRenameEvent;
 import dev.thejakwe.tuinity.event.MsgCommandEvent;
@@ -10,21 +8,12 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.GenericEvent;
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.api.exceptions.ErrorHandler;
-import net.dv8tion.jda.api.hooks.EventListener;
-import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -35,29 +24,24 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 import org.slf4j.Logger;
 
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
-import java.util.*;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
-import java.util.logging.Level;
 
 public final class CouriCraft extends JavaPlugin implements Listener {
 
     public static CouriCraft instance;
     public FileConfiguration config;
     public YamlConfiguration whitelist;
-    public ProtocolManager protocolManager;
     public JDA jda;
-    public Map<UUID, BukkitTask> tasks = new HashMap<>();
-    private Logger logger;
+    public Logger logger;
 
     public final Function<String, String> automod = s -> {
         s = s.replaceAll("[^ -~]", ""); // all non ascii chars
@@ -71,7 +55,6 @@ public final class CouriCraft extends JavaPlugin implements Listener {
     public void onEnable() {
         instance = this;
         config = getConfig();
-        protocolManager = ProtocolLibrary.getProtocolManager();
         whitelist = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "whitelist.yml"));
         logger = getSLF4JLogger();
 
@@ -108,18 +91,14 @@ public final class CouriCraft extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void playerJoin(PlayerJoinEvent event) {
         event.joinMessage(null);
-        tasks.put(event.getPlayer().getUniqueId(), Bukkit.getScheduler().runTaskTimer(this, () -> {
-            event.getPlayer().sendPlayerListHeaderAndFooter(
-                Component.text("Couri", NamedTextColor.GOLD, TextDecoration.BOLD).append(Component.text("Craft", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD)),
-                LegacyComponentSerializer.legacyAmpersand().deserialize("&6TPS: %s".formatted(Bukkit.getTPS()[0]))
-            );
-        }, 20, 20));
+        event.getPlayer().sendPlayerListHeader(
+            Component.text("Couri", NamedTextColor.GOLD, TextDecoration.BOLD).append(Component.text("Craft", NamedTextColor.LIGHT_PURPLE, TextDecoration.BOLD))
+        );
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void playerLeave(PlayerQuitEvent event) {
         event.quitMessage(null);
-        tasks.get(event.getPlayer().getUniqueId()).cancel();
     }
 
     @EventHandler
