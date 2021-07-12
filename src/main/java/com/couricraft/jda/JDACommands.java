@@ -52,6 +52,20 @@ public final class JDACommands {
             ).reference(event.getMessage()).queue();
             return;
         }
+        if (whitelist.getValues(false).containsValue(uuid.toString())) {
+            logger.info("User %s tried to whitelist acc %s (%s) but it was already whitelisted");
+            event.getChannel().sendMessageEmbeds(
+                new EmbedBuilder()
+                    .setTitle("Error")
+                    .setColor(Color.RED)
+                    .setFooter("CouriCraft")
+                    .setTimestamp(Instant.now())
+                    .setDescription("Player `" + event.getMessage().getContentRaw() + "` is already whitelisted. Please contact a mod if you believe that this is in error")
+                    .build()
+            ).reference(event.getMessage()).queue();
+            return;
+        }
+
 
         whitelist.set(event.getAuthor().getId(), uuid.toString());
         whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
