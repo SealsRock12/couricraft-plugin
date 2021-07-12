@@ -52,8 +52,9 @@ public final class JDACommands {
             ).reference(event.getMessage()).queue();
             return;
         }
+        OfflinePlayer player = server.getOfflinePlayer(uuid);
         if (whitelist.getValues(false).containsValue(uuid.toString())) {
-            logger.info("User %s tried to whitelist acc %s (%s) but it was already whitelisted");
+            logger.info("User %s tried to whitelist acc %s (%s) but it was already whitelisted".formatted(event.getAuthor().getId(), player.getName(), uuid));
             event.getChannel().sendMessageEmbeds(
                 new EmbedBuilder()
                     .setTitle("Error")
@@ -66,10 +67,8 @@ public final class JDACommands {
             return;
         }
 
-
         whitelist.set(event.getAuthor().getId(), uuid.toString());
         whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
-        OfflinePlayer player = server.getOfflinePlayer(uuid);
         logger.info("Whitelisted acc %s (%s) via user %s".formatted(player.getName(), uuid, event.getAuthor().getId()));
         player.setWhitelisted(true);
         event.getChannel().sendMessageEmbeds(
