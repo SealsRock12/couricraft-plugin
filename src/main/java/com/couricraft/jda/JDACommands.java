@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import java.awt.*;
 import java.io.File;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.Map;
 import java.util.UUID;
 
 public final class JDACommands {
@@ -103,5 +103,28 @@ public final class JDACommands {
         });
         logger.info("Refresh complete");
         event.getChannel().sendMessage("Refresh complete.").reference(event.getMessage()).queue();
+    }
+
+    public void minecraftCommand(GuildMessageReceivedEvent event) {
+        String args = event.getMessage().getContentRaw().trim().substring(11).trim();
+        UUID uuid = server.getPlayerUniqueId(args);
+        if (uuid == null) {
+            event.getMessage().reply("Couldn't find minecraft player `%s`".formatted(args)).queue();
+            return;
+        }
+
+        OfflinePlayer player = server.getOfflinePlayer(uuid);
+        String id = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(uuid.toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Not whitelisted");
+
+        event.getMessage().replyEmbeds(
+            new EmbedBuilder()
+                .setTitle("Player %s".formatted(player.getName()))
+                .setColor(Color.BLUE)
+                .setFooter("CouriCraft")
+                .setTimestamp(Instant.now())
+                .setDescription("Discord: %s\nMinecraft: `%s`".formatted(id, player.getName()))
+                .setThumbnail("https://crafatar.com/renders/head/%s.png?overlay=true".formatted(uuid))
+                .build()
+        ).queue();
     }
 }

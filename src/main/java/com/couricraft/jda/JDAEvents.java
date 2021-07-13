@@ -37,6 +37,8 @@ public final class JDAEvents extends ListenerAdapter {
         } else if (event.getChannel().getId().contentEquals(plugin.config.getString("channels.commands"))) {
             if (event.getMessage().getContentRaw().trim().equalsIgnoreCase("-refresh")) {
                 commands.refreshCommand(event);
+            } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-minecraft ")) {
+                commands.minecraftCommand(event); // crop leading -minecraft
             }
         }
     }
