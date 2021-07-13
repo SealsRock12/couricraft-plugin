@@ -31,6 +31,7 @@ import java.io.File;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -103,26 +104,28 @@ public final class CouriCraft extends JavaPlugin implements Listener {
 
     @EventHandler
     public void msgCommand(MsgCommandEvent event) {
-        UUID uuid = new UUID(0L, 0L);
-        if (event.getSender() instanceof Player p) uuid = p.getUniqueId();
+        UUID uuid = event.getSender() instanceof Player p ? p.getUniqueId() : new UUID(0L, 0L);
 
-        jda.getTextChannelById(getConfig().getString("channels.messages")).sendMessageEmbeds(new EmbedBuilder()
-            .setTitle("Message Sent")
-            .setColor(Color.CYAN)
-            .setAuthor(event.getSender().getName())
-            .setFooter(event.getTarget().getName())
-            .setDescription(((TextComponent) event.getMessage()).content())
-            .setTimestamp(Instant.now())
-            .addField("Author", "`%s`\n`%s`".formatted(event.getSender().getName(), uuid), false)
-            .addField("Recipient", "`%s`\n`%s`".formatted(event.getTarget().getName(), event.getTarget().getUniqueId()), false)
-            .build()
+        String senderID = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(uuid.toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Not a player");
+        String recieverID = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(event.getTarget().getUniqueId().toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Error");
+
+        jda.getTextChannelById(getConfig().getString("channels.messages")).sendMessageEmbeds(
+            new EmbedBuilder()
+                .setTitle("Message Sent")
+                .setColor(Color.ORANGE)
+                .setFooter("CouriCraft")
+                .setDescription(((TextComponent) event.getMessage()).content())
+                .setTimestamp(Instant.now())
+                .addField("Author", "`%s`\n%s".formatted(event.getSender().getName(), senderID), false)
+                .addField("Recipient", "`%s`\n%s".formatted(event.getTarget().getName(), recieverID), false)
+                .build()
         ).complete();
     }
 
     @EventHandler
     public void itemRename(AnvilRenameEvent event) {
         String name = automod.apply(event.name());
-        logger.debug("User {} renamed at anvil, orig text {} rename text {}", event.getPlayer().getName(), event.name(), name);
+        logger.debug("User {} renamed at an anvil, orig text {} rename text {}", event.getPlayer().getName(), event.name(), name);
         event.name(name);
     }
 
