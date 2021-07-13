@@ -121,11 +121,15 @@ public final class CouriCraft extends JavaPlugin implements Listener {
 
     @EventHandler
     public void itemRename(AnvilRenameEvent event) {
-        event.name(automod.apply(event.name()));
+        String name = automod.apply(event.name());
+        logger.debug("User {} renamed at anvil, orig text {} rename text {}", event.getPlayer().getName(), event.name(), name);
+        event.name(name);
     }
 
     @EventHandler
     public void signCreate(SignTextEvent event) {
-        event.lines(Arrays.stream(event.lines()).map(automod).toArray(String[]::new));
+        String[] lines = Arrays.stream(event.lines()).map(automod).toArray(String[]::new);
+        logger.debug("User {} created a sign, orig text {} rename text {}", event.getPlayer().getName(), Arrays.toString(event.lines()), Arrays.toString(lines));
+        event.lines(lines);
     }
 }
