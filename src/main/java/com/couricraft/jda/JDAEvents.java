@@ -38,7 +38,9 @@ public final class JDAEvents extends ListenerAdapter {
             if (event.getMessage().getContentRaw().trim().equalsIgnoreCase("-refresh")) {
                 commands.refreshCommand(event);
             } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-minecraft ")) {
-                commands.minecraftCommand(event); // crop leading -minecraft
+                commands.minecraftCommand(event);
+            } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-discord ")) {
+                commands.discordCommand(event);
             }
         }
     }

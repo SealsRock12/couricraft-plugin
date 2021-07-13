@@ -2,9 +2,11 @@ package com.couricraft.jda;
 
 import com.couricraft.CouriCraft;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorHandler;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
@@ -16,6 +18,7 @@ import java.awt.*;
 import java.io.File;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class JDACommands {
@@ -123,6 +126,26 @@ public final class JDACommands {
                 .setFooter("CouriCraft")
                 .setTimestamp(Instant.now())
                 .setDescription("Discord: %s\nMinecraft: `%s`".formatted(id, player.getName()))
+                .setThumbnail("https://crafatar.com/renders/head/%s.png?overlay=true".formatted(uuid))
+                .build()
+        ).queue();
+    }
+
+    public void discordCommand(GuildMessageReceivedEvent event) {
+        String args = event.getMessage().getContentRaw().trim().substring(9).trim();
+        UUID uuid = Optional.ofNullable(whitelist.getString(args)).map(UUID::fromString).orElse(null);
+        if (uuid == null) {
+            event.getMessage().reply("They don't have a whitelisted account").queue();
+            return;
+        }
+        OfflinePlayer player = server.getOfflinePlayer(uuid);
+        event.getMessage().replyEmbeds(
+            new EmbedBuilder()
+                .setTitle("Player %s".formatted(player.getName()))
+                .setColor(Color.MAGENTA)
+                .setFooter("CouriCraft")
+                .setTimestamp(Instant.now())
+                .setDescription("Discord: <@%s>\nMinecraft: `%s`".formatted(args, player.getName()))
                 .setThumbnail("https://crafatar.com/renders/head/%s.png?overlay=true".formatted(uuid))
                 .build()
         ).queue();
