@@ -165,11 +165,11 @@ public final class JDACommands {
 
         OfflinePlayer player = server.getOfflinePlayer(uuid);
         player.setWhitelisted(false);
-        String id = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(uuid.toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Error");
+        String id = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(uuid.toString())).findFirst().map(Map.Entry::getKey).orElse("Error");
         whitelist.set(id, null);
         whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
         logger.info("User {} unlinked {} ({}) with user {}", event.getAuthor().getId(), player.getName(), uuid, id);
 
-        event.getMessage().reply("Unlinked user %s | `%s`".formatted(id, player.getName())).queue();
+        event.getMessage().reply("Unlinked user <@%s> | `%s`".formatted(id, player.getName())).queue();
     }
 }
