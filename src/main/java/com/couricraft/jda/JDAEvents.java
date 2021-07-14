@@ -27,21 +27,23 @@ public final class JDAEvents extends ListenerAdapter {
 
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
-        if (event.isWebhookMessage() || event.getAuthor().isSystem() || event.getAuthor().isBot()) return;
-        if (event.getChannel().getId().contentEquals(plugin.config.getString("channels.whitelist"))) {
-            try {
+        try {
+            if (event.isWebhookMessage() || event.getAuthor().isSystem() || event.getAuthor().isBot()) return;
+            if (event.getChannel().getId().contentEquals(plugin.config.getString("channels.whitelist"))) {
                 commands.doWhitelisting(event);
-            } catch (Exception ex) {
-                throw new RuntimeException(ex); // shouldnt happen, if it does jda can handle + log
+            } else if (event.getChannel().getId().contentEquals(plugin.config.getString("channels.commands"))) {
+                if (event.getMessage().getContentRaw().trim().equalsIgnoreCase("-refresh")) {
+                    commands.refreshCommand(event);
+                } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-minecraft ")) {
+                    commands.minecraftCommand(event);
+                } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-discord ")) {
+                    commands.discordCommand(event);
+                } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-unlink ")) {
+                    commands.unlinkCommand(event);
+                }
             }
-        } else if (event.getChannel().getId().contentEquals(plugin.config.getString("channels.commands"))) {
-            if (event.getMessage().getContentRaw().trim().equalsIgnoreCase("-refresh")) {
-                commands.refreshCommand(event);
-            } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-minecraft ")) {
-                commands.minecraftCommand(event);
-            } else if (event.getMessage().getContentRaw().trim().toLowerCase().startsWith("-discord ")) {
-                commands.discordCommand(event);
-            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex); // shouldnt happen, if it does jda can handle + log
         }
     }
 

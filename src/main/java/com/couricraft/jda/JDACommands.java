@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -86,7 +87,7 @@ public final class JDACommands {
         ).reference(event.getMessage()).queue();
     }
 
-    public void refreshCommand(GuildMessageReceivedEvent event) {
+    public void refreshCommand(GuildMessageReceivedEvent event) throws IOException {
         event.getMessage().addReaction("U+1F44D").queue(); // thumbs up
         logger.info("Refresh Started by %s".formatted(event.getAuthor().getId()));
         TextChannel channel = event.getJDA().getTextChannelById(config.getString("channels.whitelist"));
@@ -96,15 +97,18 @@ public final class JDACommands {
                 if (!channel.canTalk(mem)) {
                     OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
                     player.setWhitelisted(false);
+                    whitelist.set(u, null);
                     logger.info("[REFRESH] User %s no longer has access | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
                 }
             }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MEMBER, e -> {
                 OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
                 player.setWhitelisted(false);
+                whitelist.set(u, null);
                 logger.info("[REFRESH] User %s left | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
             }));
         });
         logger.info("Refresh complete");
+        whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
         event.getChannel().sendMessage("Refresh complete.").reference(event.getMessage()).queue();
     }
 
@@ -149,5 +153,23 @@ public final class JDACommands {
                 .setThumbnail("https://crafatar.com/renders/head/%s.png?overlay=true".formatted(uuid))
                 .build()
         ).queue();
+    }
+
+    public void unlinkCommand(GuildMessageReceivedEvent event) throws IOException {
+        String args = event.getMessage().getContentRaw().trim().substring(8).trim();
+        UUID uuid = Optional.ofNullable(whitelist.getString(args)).map(UUID::fromString).orElse(server.getPlayerUniqueId(args));
+        if (uuid == null) {
+            event.getMessage().reply("Couldn't find a user with `%s`".formatted(args)).queue();
+            return;
+        }
+
+        OfflinePlayer player = server.getOfflinePlayer(uuid);
+        player.setWhitelisted(false);
+        String id = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(uuid.toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Error");
+        whitelist.set(id, null);
+        whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
+        logger.info("User {} unlinked {} ({}) with user {}", event.getAuthor().getId(), player.getName(), uuid, id);
+
+        event.getMessage().reply("Unlinked user %s | `%s`".formatted(id, player.getName())).queue();
     }
 }

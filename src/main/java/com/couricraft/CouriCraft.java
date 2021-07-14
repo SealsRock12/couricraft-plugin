@@ -107,7 +107,7 @@ public final class CouriCraft extends JavaPlugin implements Listener {
         UUID uuid = event.getSender() instanceof Player p ? p.getUniqueId() : new UUID(0L, 0L);
 
         String senderID = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(uuid.toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Not a player");
-        String recieverID = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(event.getTarget().getUniqueId().toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Error");
+        String receiverID = whitelist.getValues(false).entrySet().stream().filter(e -> e.getValue().equals(event.getTarget().getUniqueId().toString())).findFirst().map(Map.Entry::getKey).map("<@%s>"::formatted).orElse("Error");
 
         jda.getTextChannelById(getConfig().getString("channels.messages")).sendMessageEmbeds(
             new EmbedBuilder()
@@ -117,7 +117,7 @@ public final class CouriCraft extends JavaPlugin implements Listener {
                 .setDescription(((TextComponent) event.getMessage()).content())
                 .setTimestamp(Instant.now())
                 .addField("Author", "`%s`\n%s".formatted(event.getSender().getName(), senderID), false)
-                .addField("Recipient", "`%s`\n%s".formatted(event.getTarget().getName(), recieverID), false)
+                .addField("Recipient", "`%s`\n%s".formatted(event.getTarget().getName(), receiverID), false)
                 .build()
         ).complete();
     }
