@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
+import net.dv8tion.jda.internal.requests.RestActionImpl;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -92,9 +93,10 @@ public final class JDACommands {
         logger.info("Refresh Started by %s".formatted(event.getAuthor().getId()));
         TextChannel channel = event.getJDA().getTextChannelById(config.getString("channels.whitelist"));
         whitelist.getValues(false).forEach((u, p) -> {
-            logger.debug("[REFRESH] Found User %s UUID %s".formatted(u, p));
-            event.getGuild().retrieveMemberById(u).queue(mem -> {
-                OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
+            OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
+            logger.debug("[REFRESH] Found User %s | Player %s (%s)".formatted(u, player.getName(), p));
+            try { // use for sync logic
+                Member mem = event.getGuild().retrieveMemberById(u).complete();
                 if (!channel.canTalk(mem)) {
                     player.setWhitelisted(false);
                     whitelist.set(u, null);
@@ -102,16 +104,17 @@ public final class JDACommands {
                 } else {
                     player.setWhitelisted(true); // ensure whitelist.json is up to date
                 }
-            }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MEMBER, e -> {
-                OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
-                player.setWhitelisted(false);
-                whitelist.set(u, null);
-                logger.info("[REFRESH] User %s left | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
-            }));
+            } catch (ErrorResponseException ex) {
+                if (ErrorResponse.UNKNOWN_MEMBER.test(ex)) {
+                    player.setWhitelisted(false);
+                    whitelist.set(u, null);
+                    logger.info("[REFRESH] User %s left | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
+                } else throw ex;
+            }
         });
         logger.info("Refresh complete");
         whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
-        event.getChannel().sendMessage("Refresh complete.").reference(event.getMessage()).queue();
+        event.getMessage().reply("Refresh complete.").queue();
     }
 
     public void minecraftCommand(GuildMessageReceivedEvent event) {
