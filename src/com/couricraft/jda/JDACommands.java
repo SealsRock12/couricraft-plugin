@@ -45,7 +45,7 @@ public final class JDACommands {
     public void doWhitelisting(GuildMessageReceivedEvent event) throws Exception {
         UUID uuid = server.getPlayerUniqueId(event.getMessage().getContentRaw());
         if (uuid == null) {
-            event.getChannel().sendMessageEmbeds(
+            event.getMessage().replyEmbeds(
                 new EmbedBuilder()
                     .setTitle("Error")
                     .setColor(Color.RED)
@@ -53,13 +53,13 @@ public final class JDACommands {
                     .setTimestamp(Instant.now())
                     .setDescription("Could not find player `" + event.getMessage().getContentRaw() + "`")
                     .build()
-            ).reference(event.getMessage()).queue();
+            ).queue();
             return;
         }
         OfflinePlayer player = server.getOfflinePlayer(uuid);
         if (whitelist.getValues(false).containsValue(uuid.toString())) {
             logger.info("User %s tried to whitelist acc %s (%s) but it was already whitelisted".formatted(event.getAuthor().getId(), player.getName(), uuid));
-            event.getChannel().sendMessageEmbeds(
+            event.getMessage().replyEmbeds(
                 new EmbedBuilder()
                     .setTitle("Error")
                     .setColor(Color.RED)
@@ -67,7 +67,7 @@ public final class JDACommands {
                     .setTimestamp(Instant.now())
                     .setDescription("Player `" + event.getMessage().getContentRaw() + "` is already whitelisted. Please contact a mod if you believe that this is in error")
                     .build()
-            ).reference(event.getMessage()).queue();
+            ).queue();
             return;
         }
 
@@ -75,7 +75,7 @@ public final class JDACommands {
         whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
         logger.info("Whitelisted acc %s (%s) via user %s".formatted(player.getName(), uuid, event.getAuthor().getId()));
         player.setWhitelisted(true);
-        event.getChannel().sendMessageEmbeds(
+        event.getMessage().replyEmbeds(
             new EmbedBuilder()
                 .setTitle("Success")
                 .setColor(Color.GREEN)
@@ -84,7 +84,7 @@ public final class JDACommands {
                 .setDescription("Your account `%s` was whitelisted successfully\nUUID: `%s`".formatted(player.getName(), uuid))
                 .setThumbnail("https://crafatar.com/renders/head/%s.png?overlay=true".formatted(uuid))
                 .build()
-        ).reference(event.getMessage()).queue();
+        ).queue();
     }
 
     public void refreshCommand(GuildMessageReceivedEvent event) throws IOException {
@@ -94,11 +94,13 @@ public final class JDACommands {
         whitelist.getValues(false).forEach((u, p) -> {
             logger.debug("[REFRESH] Found User %s UUID %s".formatted(u, p));
             event.getGuild().retrieveMemberById(u).queue(mem -> {
+                OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
                 if (!channel.canTalk(mem)) {
-                    OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
                     player.setWhitelisted(false);
                     whitelist.set(u, null);
                     logger.info("[REFRESH] User %s no longer has access | unwhitelisted acc %s (%s)".formatted(u, player.getName(), p));
+                } else {
+                    player.setWhitelisted(true); // ensure whitelist.json is up to date
                 }
             }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MEMBER, e -> {
                 OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));

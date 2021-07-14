@@ -1,0 +1,5 @@
+name: CouriCraft
+version: 1.0
+author: thejakwe
+main: com.couricraft.CouriCraft
+api-version: 1.17
