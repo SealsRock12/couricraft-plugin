@@ -94,7 +94,7 @@ public final class JDACommands {
         TextChannel channel = event.getJDA().getTextChannelById(config.getString("channels.whitelist"));
         whitelist.getValues(false).forEach((u, p) -> {
             OfflinePlayer player = server.getOfflinePlayer(UUID.fromString((String) p));
-            logger.debug("[REFRESH] Found User %s | Player %s (%s)".formatted(u, player.getName(), p));
+            logger.info("[REFRESH] Found User %s | Player %s (%s)".formatted(u, player.getName(), p));
             try { // use for sync logic
                 Member mem = event.getGuild().retrieveMemberById(u).complete();
                 if (!channel.canTalk(mem)) {
