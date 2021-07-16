@@ -9,6 +9,8 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -62,7 +64,7 @@ public final class CouriCraft extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         try {
-            jda = JDABuilder.createLight(config.getString("token"), GatewayIntent.GUILD_MESSAGES).addEventListeners(new JDAEvents(this)).build().awaitReady();
+            jda = JDABuilder.createLight(config.getString("token"), GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS).setChunkingFilter(ChunkingFilter.ALL).setMemberCachePolicy(MemberCachePolicy.ALL).addEventListeners(new JDAEvents(this)).build().awaitReady();
         } catch (Exception ex) {
             logger.error("JDA Build Exception", ex);
         }
