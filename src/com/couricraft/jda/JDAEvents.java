@@ -9,6 +9,9 @@ import org.bukkit.OfflinePlayer;
 import org.slf4j.Logger;
 
 import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,25 +52,16 @@ public final class JDAEvents extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
-        UUID uuid = Optional.ofNullable(plugin.whitelist.getString(event.getUser().getId())).map(UUID::fromString).orElse(null); // uuid or null
-        if (uuid == null) return;
-        plugin.whitelist.set(event.getUser().getId(), null);
-        OfflinePlayer player = CouriCraft.instance.getServer().getOfflinePlayer(uuid);
-        if (!plugin.whitelist.getValues(false).containsValue(uuid)) {
+        try {
+            UUID uuid = Optional.ofNullable(plugin.whitelist.getString(event.getUser().getId())).map(UUID::fromString).orElse(null);
+            if (uuid == null) return;
+            plugin.whitelist.set(event.getUser().getId(), null);
+            plugin.whitelist.save(new File(plugin.getDataFolder(), "whitelist.yml"));
+            OfflinePlayer player = plugin.getServer().getOfflinePlayer(uuid);
             player.setWhitelisted(false);
             logger.info("User %s left | unwhitelisted acc %s (%s)".formatted(event.getUser().getId(), player.getName(), uuid));
-        } else {
-            logger.info("User %s left | didnt unwhitelist acc %s (%s)".formatted(event.getUser(), player.getName(), uuid));
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
         }
-        plugin.jda.getTextChannelById(plugin.config.getString("channels.logs")).sendMessageEmbeds(
-            new EmbedBuilder()
-                .setTitle("User Left")
-                .setColor(Color.RED)
-                .setAuthor(event.getUser().getAsTag(), event.getUser().getEffectiveAvatarUrl())
-                .setFooter("CouriCraft")
-                .setTimestamp(Instant.now())
-                .setDescription("User %s left, their account `%s` was unwhitelisted.\nUUID: `%s`".formatted(event.getUser().getAsMention(), player.getName(), uuid))
-                .build()
-        ).queue();
     }
 }
